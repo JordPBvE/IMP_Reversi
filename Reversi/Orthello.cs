@@ -14,99 +14,80 @@ namespace Reversi
     public partial class Form1 : Form
     {
         //Declaratie van variabelen
-        int n = 6;
-        float textboxlengte;
-        float a;
-        int[,] speelbord;
-        bool RoodAanZet;
-        int t = 1;
-        int rood = 2;
-        int blauw = 2;
+        int       n;
+        float     rbox;
+        string[,] speelbord;
+        bool      RoodAanZet;
 
         public Form1()
         {
             InitializeComponent();
 
-            panel1.Paint += scherm;
-            panel2.Paint += scherm2;
-            panel1.MouseClick += klikken;
-            textboxlengte = 600/ n;
-            speelbord = new int[n, n];
-            RoodAanZet = false;
-            textBox1.Text = "2";
-            textBox2.Text = "2";
-            textBox3.Text = "Blauw begint";
+            defaults();
 
-
+            boardpanel.Paint += drawboard;
+            scorepanel.Paint += drawscore;
+            boardpanel.MouseClick += click;
 
         }
-        public void scherm(object o, PaintEventArgs pea)
+
+        public void defaults()
         {
-            // leeg = 0, blauw = 1, rood = 2
-            speelbord[2,2] = 1;
-            speelbord[3,3] = 1;
-            speelbord[2,3] = 2;
-            speelbord[3,2] = 2;
+            n = 6;
+            rbox = 600 / n;
+            speelbord = new string[n, n];
 
-            Pen ZwartePen = new Pen(Color.Black);
-            Brush Rood = Brushes.Red;
-            Brush Blauw = Brushes.Blue;
+            RoodAanZet = false;
 
+            for (int i = 0; i < n; i++) { for (int j = 0; j < n; j++) { speelbord[i, j] = "O"; } }
+            speelbord[n / 2 - 1, n / 2 - 1] = speelbord[n / 2, n / 2] = "B";
+            speelbord[n / 2 - 1, n / 2] = speelbord[n / 2, n / 2 - 1] = "R";
 
-            if (t % 2 == 0)
-                RoodAanZet = true;
-            else
-                RoodAanZet = false;
-
-            for (int i = 0; i < n + 1; i++)
-            {
-                a = textboxlengte * i;
-                pea.Graphics.DrawLine(ZwartePen, a, 0, a, 600);
-                pea.Graphics.DrawLine(ZwartePen, 0, a, 600, a);
-            }
+            redscore.Text   = "2";
+            bluescore.Text  = "2";
+            gamestatus.Text = "Blauw begint";
+        }
+        public void drawboard(object o, PaintEventArgs pea)
+        {
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
-                    if (speelbord[i, j] == 1)
-                    {
-                        pea.Graphics.FillEllipse(Blauw, textboxlengte * (i), textboxlengte * (j), 600 / n, 600 / n);
-                    }
-                    else if (speelbord[i, j] == 2)
-                    {
-                        pea.Graphics.FillEllipse(Rood, textboxlengte * (i), textboxlengte * (j), 600 / n, 600 / n);
-                    }
+                {
+                    Brush Col = Brushes.White;
+                    if      (speelbord[i, j] == "B")  Col = Brushes.Blue;
+                    else if (speelbord[i, j] == "R")  Col = Brushes.Red;
+
+                    pea.Graphics.FillEllipse(Col, rbox * i, rbox * j, rbox, rbox);
+                    pea.Graphics.DrawRectangle(new Pen(Color.Black), rbox * i, rbox * j, rbox, rbox);
+                }
         }
-        public void scherm2(object o, PaintEventArgs pea)
+        public void drawscore(object o, PaintEventArgs pea)
         {
             pea.Graphics.FillEllipse(Brushes.Red, 1,1,40,40);
             pea.Graphics.FillEllipse(Brushes.Blue, 1,41,40,40);
         }
 
 
-        public void klikken(object o, MouseEventArgs mea)
+        public void click(object o, MouseEventArgs mea)
         {
             try
             {
-                int Horizontaal = (mea.X / Convert.ToInt32(textboxlengte));
-                int Vertikaal = (mea.Y / Convert.ToInt32(textboxlengte));
+                int boardx = (mea.X / Convert.ToInt32(rbox));
+                int boardy = (mea.Y / Convert.ToInt32(rbox));
 
-                if (RoodAanZet == false && speelbord[Horizontaal, Vertikaal] == 0)
+                if (RoodAanZet == false && speelbord[boardx, boardy] == "O")
                 {
-                    speelbord[Horizontaal, Vertikaal] = 1;
-                    textBox3.Text = "Rood is aan zet";
-                    blauw += 1;
-                    string s2 = blauw.ToString();
-                    textBox1.Text = s2;
+                    speelbord[boardx, boardy] = "B";
+                    gamestatus.Text = "Rood is aan zet";
+                    bluescore.Text = $"{Int32.Parse(bluescore.Text) + 1}";
                 }
-                else if (RoodAanZet == true && speelbord[Horizontaal, Vertikaal] == 0)
+                else if (RoodAanZet == true && speelbord[boardx, boardy] == "O")
                 {
-                    speelbord[Horizontaal, Vertikaal] = 2;
-                    textBox3.Text = "Blauw is aan zet";
-                    rood += 1;
-                    string s1 = rood.ToString();
-                    textBox2.Text = s1;
+                    speelbord[boardx, boardy] = "R";
+                    gamestatus.Text = "Blauw is aan zet";
+                    bluescore.Text = $"{Int32.Parse(redscore.Text) + 1}";
                 }
-                t += 1;
-                panel1.Invalidate();
+                RoodAanZet = !RoodAanZet;
+                boardpanel.Invalidate();
             }
             catch
             {
