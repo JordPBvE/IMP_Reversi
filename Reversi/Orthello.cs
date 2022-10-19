@@ -17,9 +17,7 @@ namespace Reversi
         //Declaratie van variabelen
         int n;
         float rbox;
-        string[,] speelbord;
-        bool RoodAanZet;
-        List<int[]> moves;
+        Board board;
 
         public Form1()
         {
@@ -37,56 +35,33 @@ namespace Reversi
         {
             n = 6;
             rbox = 600 / n;
-            speelbord = new string[n, n];
 
-            RoodAanZet = false;
+            board = new Board(n);
+            board.updatescore(bluescorelabel, redscorelabel);
 
-            for (int i = 0; i < n; i++) { for (int j = 0; j < n; j++) { speelbord[i, j] = "O"; } }
-            speelbord[n / 2 - 1, n / 2 - 1] = speelbord[n / 2, n / 2] = "B";
-            speelbord[n / 2 - 1, n / 2] = speelbord[n / 2, n / 2 - 1] = "R";
-
-            redscorelabel.Text   = "2";
-            bluescorelabel.Text  = "2";
             gamestatus.Text = "Blauw begint";
-
-            updatemoves();
         }
+
+
         public void drawboard(object o, PaintEventArgs pea)
         {
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
                 {
-                    Brush Col = Brushes.White;
-                    if      (speelbord[i, j] == "B")  Col = Brushes.Blue;
-                    else if (speelbord[i, j] == "R")  Col = Brushes.Red;
+                    Brush piecebrush = board.getsquarecolor(i, j, this.BackColor);
 
-                    pea.Graphics.FillEllipse(Col, rbox * i, rbox * j, rbox, rbox);
+                    pea.Graphics.FillEllipse  (piecebrush,           rbox * i, rbox * j, rbox, rbox);
                     pea.Graphics.DrawRectangle(new Pen(Color.Black), rbox * i, rbox * j, rbox, rbox);
                 }
 
-            for (int index = 0; index < moves.Count; index++)
+            for (int index = 0; index < board.moves.Count; index++)
             {
-                int[] square = moves[index];
+                int[] square = board.moves[index];
                 pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square[0], rbox * square[1], rbox, rbox);
             }
         }
 
-        public void updatescore()
-        {
-            int redscore  = 0;
-            int bluescore = 0;
 
-            for (int i = 0; i < n; i++)
-                for (int j = 0; j < n; j++)
-                {
-                    if (speelbord[i, j] == "B") bluescore++;
-                    else if (speelbord[i, j] == "R") redscore++;
-                }
-
-            bluescorelabel.Text = $"{bluescore}";
-            redscorelabel.Text  = $"{redscore}";
-
-        }
         public void drawscore(object o, PaintEventArgs pea)
         {
             pea.Graphics.FillEllipse(Brushes.Red, 1,1,40,40);
@@ -101,21 +76,16 @@ namespace Reversi
                 int boardx = (mea.X / Convert.ToInt32(rbox));
                 int boardy = (mea.Y / Convert.ToInt32(rbox));
 
-                if (RoodAanZet == false && speelbord[boardx, boardy] == "O")
-                {
-                    speelbord[boardx, boardy] = "B";
-                    gamestatus.Text = "Rood is aan zet";
-                }
-                else if (RoodAanZet == true && speelbord[boardx, boardy] == "O")
-                {
-                    speelbord[boardx, boardy] = "R";
-                    gamestatus.Text = "Blauw is aan zet";
-                }
-                RoodAanZet = !RoodAanZet;
-                boardpanel.Invalidate();
+                if (board.player == "BLUE" && board.grid[boardx, boardy] == "O")
+                    board.grid[boardx, boardy] = "B";
+                else if (board.player == "RED" && board.grid[boardx, boardy] == "O")
+                    board.grid[boardx, boardy] = "R";
 
-                updatemoves();
-                updatescore();
+                board.switchplayer(gamestatus);
+                board.updatemoves();
+                board.updatescore(bluescorelabel, redscorelabel);
+
+                boardpanel.Invalidate();
             }
             catch
             {
@@ -123,49 +93,101 @@ namespace Reversi
             }
         }
 
+        private void textBox1_TextChanged(object sender, EventArgs e) { }
+        private void textBox2_TextChanged(object sender, EventArgs e) { }
+    }
+
+
+    public class Board
+    {
+        public int         dimension;
+        public string[,]   grid;
+        public List<int[]> moves;
+        public string      player;
+
+        public Board( int n )
+        {
+            this.dimension = n;
+
+            this.grid = new string[n, n];
+            for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) this.grid[i, j] = "O";
+            this.grid[n / 2 - 1, n / 2 - 1] = this.grid[n / 2, n / 2] = "B";
+            this.grid[n / 2 - 1, n / 2] = this.grid[n / 2, n / 2 - 1] = "R";
+
+            this.player = "BLUE";
+
+            this.updatemoves();
+        }
+
+        public Brush getsquarecolor(int i, int j, Color background)
+        {
+            Color col = background;
+            if (this.grid[i, j] == "R")      col = Color.Red;
+            else if (this.grid[i, j] == "B") col = Color.Blue;
+
+            Brush br = new SolidBrush(col);
+            return br;
+        }
+
         public void updatemoves()
         {
-            moves = new List<int[]> { }; 
-            string neighbor;
-            string neighborneigbor;
+            moves = new List<int[]> { };
+            string neighbor, neighborneigbor;
 
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < n; j++)
-                {
-
-                    int[,] surrounds = { { 1,   0 }, {   0, - 1 },
-                                         { 1,   1 }, { - 1,   0 },
-                                         { 1, - 1 }, { - 1,   1 },
-                                         { 0,   1 }, { - 1, - 1 } };
-
-                    for (int index = 0; index < 8; index ++)
+            for (int i = 0; i < this.dimension; i++)
+                for (int j = 0; j < this.dimension; j++)
+                    if ( (this.grid[i, j] == "B" && this.player == "BLUE") || (this.grid[i, j] == "R" && this.player == "RED"))
                     {
-                        try
+                        int[,] surrounds = { { 1,   0 }, {   0, - 1 },
+                                             { 1,   1 }, { - 1,   0 },
+                                             { 1, - 1 }, { - 1,   1 },
+                                             { 0,   1 }, { - 1, - 1 } };
+
+                        for (int index = 0; index < 8; index++)
                         {
-                            neighbor        = speelbord[i +     surrounds[index,0], j +     surrounds[index,1]];
-                            neighborneigbor = speelbord[i + 2 * surrounds[index,0], j + 2 * surrounds[index,1]];
-
-                            if ((RoodAanZet && neighbor == "B" && neighborneigbor == "R") || 
-                               (!RoodAanZet && neighbor == "R" && neighborneigbor == "B"))
+                            try
                             {
-                                moves.Add(new int[] { i, j });
+                                neighbor        = this.grid[i +     surrounds[index, 0], j +     surrounds[index, 1]];
+                                neighborneigbor = this.grid[i + 2 * surrounds[index, 0], j + 2 * surrounds[index, 1]];
+
+                                if (neighbor != this.grid[i, j] && neighbor != "O" && neighborneigbor == "O")
+                                {
+                                    moves.Add(new int[] { i + 2 * surrounds[index, 0], j + 2 * surrounds[index, 1]  });
+                                }
                             }
+                            catch { /* INDEX OUT OF RANGE */ }
                         }
-                        catch { /* INDEX OUT OF RANGE */ }
                     }
+        }
+
+        public void updatescore(Label bluescorelabel, Label redscorelabel)
+        {
+            int redscore = 0;
+            int bluescore = 0;
+
+            for (int i = 0; i < this.dimension; i++)
+                for (int j = 0; j < this.dimension; j++)
+                {
+                    if (this.grid[i, j] == "B") bluescore++;
+                    else if (this.grid[i, j] == "R") redscore++;
                 }
+
+            bluescorelabel.Text = $"{bluescore}";
+            redscorelabel.Text  = $"{redscore}";
+        }
+
+        public void switchplayer(Label gamestatus)
+        {
+            if (this.player == "BLUE")
+            {
+                this.player = "RED";
+                gamestatus.Text = "Rood is aan zet";
             }
-        }
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
-
+            else
+            {
+                this.player = "BLUE";
+                gamestatus.Text = "Blauw is aan zet";
+            }
         }
     }
 }
