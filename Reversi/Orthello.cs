@@ -48,16 +48,17 @@ namespace Reversi
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
                 {
-                    Brush piecebrush = board.getsquarecolor(i, j, this.BackColor);
+                    Point point = new Point(i, j);
 
+                    Brush piecebrush = board.getsquarecolor(point, this.BackColor);
                     pea.Graphics.FillEllipse(piecebrush, rbox * i, rbox * j, rbox, rbox);
                     pea.Graphics.DrawRectangle(new Pen(Color.Black), rbox * i, rbox * j, rbox, rbox);
                 }
 
             for (int index = 0; index < board.moves.Count; index++)
             {
-                int[] square = board.moves[index].Item1;
-                pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square[0], rbox * square[1], rbox, rbox);
+                Point square = board.moves[index].point;
+                pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square.x, rbox * square.y, rbox, rbox);
             }
         }
 
@@ -100,15 +101,16 @@ namespace Reversi
     public class Board
     {
         public int dimension;
-        public string[,] grid;
-        public List<(int[], int[])> moves;
+        public GridWrapper grid;
+        public List<Move> moves;
         public string player;
 
         public Board(int n)
         {
             this.dimension = n;
 
-            this.grid = new string[n, n];
+            this.grid = new GridWrapper(n, n);
+
             for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) this.grid[i, j] = "O";
             this.grid[n / 2 - 1, n / 2 - 1] = this.grid[n / 2, n / 2] = "B";
             this.grid[n / 2 - 1, n / 2] = this.grid[n / 2, n / 2 - 1] = "R";
@@ -118,11 +120,11 @@ namespace Reversi
             this.updatemoves();
         }
 
-        public Brush getsquarecolor(int i, int j, Color background)
+        public Brush getsquarecolor(Point point, Color background)
         {
             Color col = background;
-            if (this.grid[i, j] == "R") col = Color.Red;
-            else if (this.grid[i, j] == "B") col = Color.Blue;
+            if      (this.grid[point] == "R") col = Color.Red;
+            else if (this.grid[point] == "B") col = Color.Blue;
 
             Brush br = new SolidBrush(col);
             return br;
@@ -133,57 +135,74 @@ namespace Reversi
             bool ispossible = false;
 
             for (int i = 0; i < this.moves.Count; i++)
-                if (x == this.moves[i].Item1[0] && y == this.moves[i].Item1[1])
+                if (x == this.moves[i].point.x && y == this.moves[i].point.y)
                     ispossible = true;
 
             return ispossible;
         }
 
-        public void placepiece(int x, int y)
+        public void placepiece(int a, int b)
         {
-            this.grid[x, y] = Char.ToString(this.player[0]);
+            Point point = new Point(a, b);
+
+            this.grid[point] = Char.ToString(this.player[0]);
 
             for (int i = 0; i < moves.Count; i++)
-                if (x == moves[i].Item1[0] && y == moves[i].Item1[1])
-                    this.grid[moves[i].Item2[0], moves[i].Item2[1]] = Char.ToString(this.player[0]);
-                
+                if (point == moves[i].point)
+                    for (int k = 0; k < this.moves[i].steps.Count; k++)
+                    {
+                        this.grid[moves[i].steps[k]] = Char.ToString(this.player[0]);
+                    }
         }
 
         public void updatemoves()
         {
-            moves = new List<(int[], int[])> { };
-            string neighbor, neighborneigbor;
+            moves = new List<Move> { };
+            Point neighbor;
+            string neighborvalue;
+            List<Point> steps;
 
             for (int i = 0; i < this.dimension; i++)
                 for (int j = 0; j < this.dimension; j++)
                     if ((this.grid[i, j] == "B" && this.player == "BLUE") || (this.grid[i, j] == "R" && this.player == "RED"))
                     {
-                        int[,] surrounds = { { 1,   0 }, {   0, - 1 },
-                                             { 1,   1 }, { - 1,   0 },
-                                             { 1, - 1 }, { - 1,   1 },
-                                             { 0,   1 }, { - 1, - 1 } };
+                        Point pt = new Point(i, j);
+
+                        List<Point> surrounds = new List<Point>
+                        {
+                            new Point(   1,   0 ), new Point(   1,   1 ), new Point(   1, - 1 ),
+                            new Point( - 1,   0 ), new Point( - 1,   1 ), new Point( - 1, - 1 ),
+                            new Point(   0,   1 ), new Point(   0, - 1 )
+                        };
 
                         for (int index = 0; index < 8; index++)
                         {
                             try
                             {
-                                neighbor = this.grid[i + surrounds[index, 0], j + surrounds[index, 1]];
-                                neighborneigbor = this.grid[i + 2 * surrounds[index, 0], j + 2 * surrounds[index, 1]];
+                                steps = new List<Point> { };
 
-                                if (neighbor != this.grid[i, j] && neighbor != "O" && neighborneigbor == "O")
+                                neighbor = pt + surrounds[index];
+
+                                neighborvalue = this.grid[neighbor.x, neighbor.y];
+
+                                while (neighborvalue != Char.ToString(this.player[0]) && neighborvalue != "O")
                                 {
-                                    (int[], int[]) movetup;
-                                    movetup.Item1 = new int[] { i + 2 * surrounds[index, 0], j + 2 * surrounds[index, 1] };
-                                    movetup.Item2 = new int[] { i + surrounds[index, 0], j + surrounds[index, 1] };
+                                    neighbor += surrounds[index];
+                                    neighborvalue = this.grid[neighbor.x, neighbor.y];
 
-                                    moves.Add(movetup);
+                                    steps.Add(neighbor);
+                                }
+
+                                if (neighborvalue == "O" && steps.Count > 0)
+                                {
+                                    Move newmove = new Move(neighbor, steps);
+                                    moves.Add(newmove);
                                 }
                             }
                             catch { /* INDEX OUT OF RANGE */ }
                         }
                     }
         }
-
         public void updatescore(Label bluescorelabel, Label redscorelabel)
         {
             int redscore = 0;
@@ -212,6 +231,64 @@ namespace Reversi
                 this.player = "BLUE";
                 gamestatus.Text = "Blauw is aan zet";
             }
+        }
+    }
+
+    public class GridWrapper : Tuple<int, int>
+    {
+        public string[,] Grid { set; get; }
+
+        public string this[Point point]
+        {
+            get => Grid [point.x, point.y];
+            set => Grid [point.x, point.y] = value;
+        }
+        public string this[int x, int y]
+        {
+            get => Grid[x, y];
+            set => Grid[x, y] = value;
+        }
+
+        public GridWrapper(int dim1, int dim2) : base(dim1, dim2)
+        {
+            Grid = new string[dim1, dim2];
+        }
+    }
+
+    public class Move
+    {
+        public List<Point> steps;
+        public Point       point;
+
+        public Move(Point point, List<Point> steps)
+        {
+            this.steps = steps;
+            this.point = point;
+        }
+    }
+
+    public class Point
+    {
+        public int x;
+        public int y;
+
+        public Point(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public static Point operator +(Point a, Point b)
+        => new Point(a.x + b.x, a.y + b.y);
+
+
+        public static bool operator ==(Point a, Point b)
+        {
+            return (a.x == b.x && a.y == b.y);
+        }
+        public static bool operator !=(Point a, Point b)
+        {
+            return !(a.x == b.x && a.y == b.y);
         }
     }
 }
