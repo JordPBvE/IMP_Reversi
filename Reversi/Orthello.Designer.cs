@@ -30,9 +30,9 @@
         {
             this.boardpanel = new System.Windows.Forms.Panel();
             this.scorepanel = new System.Windows.Forms.Panel();
-            this.redscore = new System.Windows.Forms.TextBox();
-            this.bluescore = new System.Windows.Forms.TextBox();
-            this.gamestatus = new System.Windows.Forms.TextBox();
+            this.redscorelabel = new System.Windows.Forms.Label();
+            this.bluescorelabel = new System.Windows.Forms.Label();
+            this.gamestatus = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // panel1
@@ -51,27 +51,25 @@
             // 
             // textBox1
             // 
-            this.redscore.BackColor = System.Drawing.SystemColors.Control;
-            this.redscore.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.redscore.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.redscore.Location = new System.Drawing.Point(64, 92);
-            this.redscore.Name = "textBox1";
-            this.redscore.ReadOnly = true;
-            this.redscore.Size = new System.Drawing.Size(78, 31);
-            this.redscore.TabIndex = 2;
-            this.redscore.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
+            this.redscorelabel.BackColor = System.Drawing.SystemColors.Control;
+            this.redscorelabel.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.redscorelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.redscorelabel.Location = new System.Drawing.Point(64, 92);
+            this.redscorelabel.Name = "textBox1";
+            this.redscorelabel.Size = new System.Drawing.Size(78, 31);
+            this.redscorelabel.TabIndex = 2;
+            this.redscorelabel.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
             // textBox2
             // 
-            this.bluescore.BackColor = System.Drawing.SystemColors.Control;
-            this.bluescore.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.bluescore.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.bluescore.Location = new System.Drawing.Point(64, 139);
-            this.bluescore.Name = "textBox2";
-            this.bluescore.ReadOnly = true;
-            this.bluescore.Size = new System.Drawing.Size(54, 31);
-            this.bluescore.TabIndex = 3;
-            this.bluescore.TextChanged += new System.EventHandler(this.textBox2_TextChanged);
+            this.bluescorelabel.BackColor = System.Drawing.SystemColors.Control;
+            this.bluescorelabel.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.bluescorelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.bluescorelabel.Location = new System.Drawing.Point(64, 139);
+            this.bluescorelabel.Name = "textBox2";
+            this.bluescorelabel.Size = new System.Drawing.Size(54, 31);
+            this.bluescorelabel.TabIndex = 3;
+            this.bluescorelabel.TextChanged += new System.EventHandler(this.textBox2_TextChanged);
             // 
             // textBox3
             // 
@@ -80,7 +78,6 @@
             this.gamestatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.gamestatus.Location = new System.Drawing.Point(64, 203);
             this.gamestatus.Name = "textBox3";
-            this.gamestatus.ReadOnly = true;
             this.gamestatus.Size = new System.Drawing.Size(266, 31);
             this.gamestatus.TabIndex = 4;
             // 
@@ -90,8 +87,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(987, 1055);
             this.Controls.Add(this.gamestatus);
-            this.Controls.Add(this.bluescore);
-            this.Controls.Add(this.redscore);
+            this.Controls.Add(this.bluescorelabel);
+            this.Controls.Add(this.redscorelabel);
             this.Controls.Add(this.scorepanel);
             this.Controls.Add(this.boardpanel);
             this.Name = "Form1";
@@ -105,9 +102,9 @@
 
         private System.Windows.Forms.Panel boardpanel;
         private System.Windows.Forms.Panel scorepanel;
-        private System.Windows.Forms.TextBox redscore;
-        private System.Windows.Forms.TextBox bluescore;
-        private System.Windows.Forms.TextBox gamestatus;
+        private System.Windows.Forms.Label redscorelabel;
+        private System.Windows.Forms.Label bluescorelabel;
+        private System.Windows.Forms.Label gamestatus;
     }
 }
 

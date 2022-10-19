@@ -45,8 +45,8 @@ namespace Reversi
             speelbord[n / 2 - 1, n / 2 - 1] = speelbord[n / 2, n / 2] = "B";
             speelbord[n / 2 - 1, n / 2] = speelbord[n / 2, n / 2 - 1] = "R";
 
-            redscore.Text   = "2";
-            bluescore.Text  = "2";
+            redscorelabel.Text   = "2";
+            bluescorelabel.Text  = "2";
             gamestatus.Text = "Blauw begint";
 
             updatemoves();
@@ -69,6 +69,23 @@ namespace Reversi
                 int[] square = moves[index];
                 pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square[0], rbox * square[1], rbox, rbox);
             }
+        }
+
+        public void updatescore()
+        {
+            int redscore  = 0;
+            int bluescore = 0;
+
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                {
+                    if (speelbord[i, j] == "B") bluescore++;
+                    else if (speelbord[i, j] == "R") redscore++;
+                }
+
+            bluescorelabel.Text = $"{bluescore}";
+            redscorelabel.Text  = $"{redscore}";
+
         }
         public void drawscore(object o, PaintEventArgs pea)
         {
@@ -98,6 +115,7 @@ namespace Reversi
                 boardpanel.Invalidate();
 
                 updatemoves();
+                updatescore();
             }
             catch
             {
