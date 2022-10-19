@@ -8,16 +8,18 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace Reversi
 {
     public partial class Form1 : Form
     {
         //Declaratie van variabelen
-        int       n;
-        float     rbox;
+        int n;
+        float rbox;
         string[,] speelbord;
-        bool      RoodAanZet;
+        bool RoodAanZet;
+        List<int[]> moves;
 
         public Form1()
         {
@@ -27,8 +29,8 @@ namespace Reversi
 
             boardpanel.Paint += drawboard;
             scorepanel.Paint += drawscore;
-            boardpanel.MouseClick += click;
 
+            boardpanel.MouseClick += click;
         }
 
         public void defaults()
@@ -46,6 +48,8 @@ namespace Reversi
             redscore.Text   = "2";
             bluescore.Text  = "2";
             gamestatus.Text = "Blauw begint";
+
+            updatemoves();
         }
         public void drawboard(object o, PaintEventArgs pea)
         {
@@ -59,6 +63,12 @@ namespace Reversi
                     pea.Graphics.FillEllipse(Col, rbox * i, rbox * j, rbox, rbox);
                     pea.Graphics.DrawRectangle(new Pen(Color.Black), rbox * i, rbox * j, rbox, rbox);
                 }
+
+            for (int index = 0; index < moves.Count; index++)
+            {
+                int[] square = moves[index];
+                pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square[0], rbox * square[1], rbox, rbox);
+            }
         }
         public void drawscore(object o, PaintEventArgs pea)
         {
@@ -78,20 +88,55 @@ namespace Reversi
                 {
                     speelbord[boardx, boardy] = "B";
                     gamestatus.Text = "Rood is aan zet";
-                    bluescore.Text = $"{Int32.Parse(bluescore.Text) + 1}";
                 }
                 else if (RoodAanZet == true && speelbord[boardx, boardy] == "O")
                 {
                     speelbord[boardx, boardy] = "R";
                     gamestatus.Text = "Blauw is aan zet";
-                    bluescore.Text = $"{Int32.Parse(redscore.Text) + 1}";
                 }
                 RoodAanZet = !RoodAanZet;
                 boardpanel.Invalidate();
+
+                updatemoves();
             }
             catch
             {
                 Console.WriteLine("Error, Klik in het speelveld!");
+            }
+        }
+
+        public void updatemoves()
+        {
+            moves = new List<int[]> { }; 
+            string neighbor;
+            string neighborneigbor;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+
+                    int[,] surrounds = { { 1,   0 }, {   0, - 1 },
+                                         { 1,   1 }, { - 1,   0 },
+                                         { 1, - 1 }, { - 1,   1 },
+                                         { 0,   1 }, { - 1, - 1 } };
+
+                    for (int index = 0; index < 8; index ++)
+                    {
+                        try
+                        {
+                            neighbor        = speelbord[i +     surrounds[index,0], j +     surrounds[index,1]];
+                            neighborneigbor = speelbord[i + 2 * surrounds[index,0], j + 2 * surrounds[index,1]];
+
+                            if ((RoodAanZet && neighbor == "B" && neighborneigbor == "R") || 
+                               (!RoodAanZet && neighbor == "R" && neighborneigbor == "B"))
+                            {
+                                moves.Add(new int[] { i, j });
+                            }
+                        }
+                        catch { /* INDEX OUT OF RANGE */ }
+                    }
+                }
             }
         }
 
