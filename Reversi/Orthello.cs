@@ -50,13 +50,13 @@ namespace Reversi
                 {
                     Brush piecebrush = board.getsquarecolor(i, j, this.BackColor);
 
-                    pea.Graphics.FillEllipse  (piecebrush,           rbox * i, rbox * j, rbox, rbox);
+                    pea.Graphics.FillEllipse(piecebrush, rbox * i, rbox * j, rbox, rbox);
                     pea.Graphics.DrawRectangle(new Pen(Color.Black), rbox * i, rbox * j, rbox, rbox);
                 }
 
             for (int index = 0; index < board.moves.Count; index++)
             {
-                int[] square = board.moves[index];
+                int[] square = board.moves[index].Item1;
                 pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square[0], rbox * square[1], rbox, rbox);
             }
         }
@@ -64,8 +64,8 @@ namespace Reversi
 
         public void drawscore(object o, PaintEventArgs pea)
         {
-            pea.Graphics.FillEllipse(Brushes.Red, 1,1,40,40);
-            pea.Graphics.FillEllipse(Brushes.Blue, 1,41,40,40);
+            pea.Graphics.FillEllipse(Brushes.Red, 1, 1, 40, 40);
+            pea.Graphics.FillEllipse(Brushes.Blue, 1, 41, 40, 40);
         }
 
 
@@ -76,16 +76,15 @@ namespace Reversi
                 int boardx = (mea.X / Convert.ToInt32(rbox));
                 int boardy = (mea.Y / Convert.ToInt32(rbox));
 
-                if (board.player == "BLUE" && board.grid[boardx, boardy] == "O")
-                    board.grid[boardx, boardy] = "B";
-                else if (board.player == "RED" && board.grid[boardx, boardy] == "O")
-                    board.grid[boardx, boardy] = "R";
+                if (board.movepossible(boardx, boardy))
+                {
+                    board.placepiece(boardx, boardy);
+                    board.switchplayer(gamestatus);
+                    board.updatemoves();
+                    board.updatescore(bluescorelabel, redscorelabel);
 
-                board.switchplayer(gamestatus);
-                board.updatemoves();
-                board.updatescore(bluescorelabel, redscorelabel);
-
-                boardpanel.Invalidate();
+                    boardpanel.Invalidate();
+                }
             }
             catch
             {
@@ -100,12 +99,12 @@ namespace Reversi
 
     public class Board
     {
-        public int         dimension;
-        public string[,]   grid;
-        public List<int[]> moves;
-        public string      player;
+        public int dimension;
+        public string[,] grid;
+        public List<(int[], int[])> moves;
+        public string player;
 
-        public Board( int n )
+        public Board(int n)
         {
             this.dimension = n;
 
@@ -122,21 +121,42 @@ namespace Reversi
         public Brush getsquarecolor(int i, int j, Color background)
         {
             Color col = background;
-            if (this.grid[i, j] == "R")      col = Color.Red;
+            if (this.grid[i, j] == "R") col = Color.Red;
             else if (this.grid[i, j] == "B") col = Color.Blue;
 
             Brush br = new SolidBrush(col);
             return br;
         }
 
+        public bool movepossible(int x, int y)
+        {
+            bool ispossible = false;
+
+            for (int i = 0; i < this.moves.Count; i++)
+                if (x == this.moves[i].Item1[0] && y == this.moves[i].Item1[1])
+                    ispossible = true;
+
+            return ispossible;
+        }
+
+        public void placepiece(int x, int y)
+        {
+            this.grid[x, y] = Char.ToString(this.player[0]);
+
+            for (int i = 0; i < moves.Count; i++)
+                if (x == moves[i].Item1[0] && y == moves[i].Item1[1])
+                    this.grid[moves[i].Item2[0], moves[i].Item2[1]] = Char.ToString(this.player[0]);
+                
+        }
+
         public void updatemoves()
         {
-            moves = new List<int[]> { };
+            moves = new List<(int[], int[])> { };
             string neighbor, neighborneigbor;
 
             for (int i = 0; i < this.dimension; i++)
                 for (int j = 0; j < this.dimension; j++)
-                    if ( (this.grid[i, j] == "B" && this.player == "BLUE") || (this.grid[i, j] == "R" && this.player == "RED"))
+                    if ((this.grid[i, j] == "B" && this.player == "BLUE") || (this.grid[i, j] == "R" && this.player == "RED"))
                     {
                         int[,] surrounds = { { 1,   0 }, {   0, - 1 },
                                              { 1,   1 }, { - 1,   0 },
@@ -147,12 +167,16 @@ namespace Reversi
                         {
                             try
                             {
-                                neighbor        = this.grid[i +     surrounds[index, 0], j +     surrounds[index, 1]];
+                                neighbor = this.grid[i + surrounds[index, 0], j + surrounds[index, 1]];
                                 neighborneigbor = this.grid[i + 2 * surrounds[index, 0], j + 2 * surrounds[index, 1]];
 
                                 if (neighbor != this.grid[i, j] && neighbor != "O" && neighborneigbor == "O")
                                 {
-                                    moves.Add(new int[] { i + 2 * surrounds[index, 0], j + 2 * surrounds[index, 1]  });
+                                    (int[], int[]) movetup;
+                                    movetup.Item1 = new int[] { i + 2 * surrounds[index, 0], j + 2 * surrounds[index, 1] };
+                                    movetup.Item2 = new int[] { i + surrounds[index, 0], j + surrounds[index, 1] };
+
+                                    moves.Add(movetup);
                                 }
                             }
                             catch { /* INDEX OUT OF RANGE */ }
@@ -173,7 +197,7 @@ namespace Reversi
                 }
 
             bluescorelabel.Text = $"{bluescore}";
-            redscorelabel.Text  = $"{redscore}";
+            redscorelabel.Text = $"{redscore}";
         }
 
         public void switchplayer(Label gamestatus)
