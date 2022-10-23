@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
@@ -12,14 +13,14 @@ using System.Xml.Linq;
 
 namespace Reversi
 {
-    public partial class Form1 : Form
+    public partial class Reversi : Form
     {
         //Declaratie van variabelen
         int n;
         float rbox;
         Board board;
 
-        public Form1()
+        public Reversi()
         {
             InitializeComponent();
 
@@ -48,16 +49,21 @@ namespace Reversi
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
                 {
-                    Point point = new Point(i, j);
+                    Color squarecolor    = board.getsquarecolor(new Pt(i, j), this.BackColor);
+                    Brush piecebrush     = new SolidBrush(squarecolor);
+                    Brush lightpiecebrush = new SolidBrush(ControlPaint.LightLight(squarecolor));
 
-                    Brush piecebrush = board.getsquarecolor(point, this.BackColor);
-                    pea.Graphics.FillEllipse(piecebrush, rbox * i, rbox * j, rbox, rbox);
-                    pea.Graphics.DrawRectangle(new Pen(Color.Black), rbox * i, rbox * j, rbox, rbox);
+                    if (squarecolor == this.BackColor)
+                        lightpiecebrush = new SolidBrush(this.BackColor);
+
+                    pea.Graphics.FillEllipse  (lightpiecebrush,     rbox * i,                  rbox * j,                    rbox,                    rbox);
+                    pea.Graphics.DrawRectangle(new Pen(Color.Gray), rbox * i,                  rbox * j,                    rbox,                    rbox);
+                    pea.Graphics.FillEllipse  (piecebrush,          rbox * i + (int)(rbox/40), rbox * j + (int)(rbox / 40), rbox - (int)(rbox / 20), rbox - (int)(rbox / 20));
                 }
 
             for (int index = 0; index < board.moves.Count; index++)
             {
-                Point square = board.moves[index].point;
+                Pt square = board.moves[index].point;
                 pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square.x, rbox * square.y, rbox, rbox);
             }
         }
@@ -65,7 +71,7 @@ namespace Reversi
 
         public void drawscore(object o, PaintEventArgs pea)
         {
-            pea.Graphics.FillEllipse(Brushes.Red, 1, 1, 40, 40);
+            pea.Graphics.FillEllipse(Brushes.Red,  1, 1,  40, 40);
             pea.Graphics.FillEllipse(Brushes.Blue, 1, 41, 40, 40);
         }
 
@@ -74,12 +80,11 @@ namespace Reversi
         {
             try
             {
-                int boardx = (mea.X / Convert.ToInt32(rbox));
-                int boardy = (mea.Y / Convert.ToInt32(rbox));
+                Pt boardpos = new Pt(mea.X / Convert.ToInt32(rbox), mea.Y / Convert.ToInt32(rbox));
 
-                if (board.movepossible(boardx, boardy))
+                if (board.movepossible(boardpos))
                 {
-                    board.placepiece(boardx, boardy);
+                    board.placepiece(boardpos);
                     board.switchplayer(gamestatus);
                     board.updatemoves();
                     board.updatescore(bluescorelabel, redscorelabel);
@@ -108,43 +113,41 @@ namespace Reversi
         public Board(int n)
         {
             this.dimension = n;
-
+            
+            this.player = "BLUE";
             this.grid = new GridWrapper(n, n);
 
-            for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) this.grid[i, j] = "O";
-            this.grid[n / 2 - 1, n / 2 - 1] = this.grid[n / 2, n / 2] = "B";
-            this.grid[n / 2 - 1, n / 2] = this.grid[n / 2, n / 2 - 1] = "R";
+            for (int i = 0; i < n; i++) 
+                for (int j = 0; j < n; j++) 
+                    this.grid[i, j] = "O";
 
-            this.player = "BLUE";
+            this.grid[n / 2 - 1, n / 2 - 1] = this.grid[n / 2, n / 2]     = "B";
+            this.grid[n / 2 - 1, n / 2]     = this.grid[n / 2, n / 2 - 1] = "R";
 
             this.updatemoves();
         }
 
-        public Brush getsquarecolor(Point point, Color background)
+        public Color getsquarecolor(Pt point, Color background)
         {
-            Color col = background;
-            if      (this.grid[point] == "R") col = Color.Red;
-            else if (this.grid[point] == "B") col = Color.Blue;
+            if      (this.grid[point] == "R") return Color.Red;
+            else if (this.grid[point] == "B") return Color.Blue;
 
-            Brush br = new SolidBrush(col);
-            return br;
+            return background;
         }
 
-        public bool movepossible(int x, int y)
+        public bool movepossible(Pt point)
         {
             bool ispossible = false;
 
             for (int i = 0; i < this.moves.Count; i++)
-                if (x == this.moves[i].point.x && y == this.moves[i].point.y)
+                if (point == this.moves[i].point)
                     ispossible = true;
 
             return ispossible;
         }
 
-        public void placepiece(int a, int b)
+        public void placepiece(Pt point)
         {
-            Point point = new Point(a, b);
-
             this.grid[point] = Char.ToString(this.player[0]);
 
             for (int i = 0; i < moves.Count; i++)
@@ -158,46 +161,44 @@ namespace Reversi
         public void updatemoves()
         {
             moves = new List<Move> { };
-            Point neighbor;
+
+            Pt startpoint;
+            Pt neighbor;
             string neighborvalue;
-            List<Point> steps;
+            List<Pt> steps;
 
             for (int i = 0; i < this.dimension; i++)
                 for (int j = 0; j < this.dimension; j++)
-                    if ((this.grid[i, j] == "B" && this.player == "BLUE") || (this.grid[i, j] == "R" && this.player == "RED"))
+                    if (this.grid[i, j] == Char.ToString(this.player[0]))
                     {
-                        Point pt = new Point(i, j);
-
-                        List<Point> surrounds = new List<Point>
+                        startpoint = new Pt(i, j);
+                        List<Pt> directions = new List<Pt>
                         {
-                            new Point(   1,   0 ), new Point(   1,   1 ), new Point(   1, - 1 ),
-                            new Point( - 1,   0 ), new Point( - 1,   1 ), new Point( - 1, - 1 ),
-                            new Point(   0,   1 ), new Point(   0, - 1 )
+                            new Pt(   1,   0 ), new Pt(   1,   1 ), new Pt(   1, - 1 ),
+                            new Pt( - 1,   0 ), new Pt( - 1,   1 ), new Pt( - 1, - 1 ),
+                            new Pt(   0,   1 ), new Pt(   0, - 1 )
                         };
 
-                        for (int index = 0; index < 8; index++)
+                        foreach (Pt direction in directions)
                         {
                             try
                             {
-                                steps = new List<Point> { };
+                                steps = new List<Pt> { };
 
-                                neighbor = pt + surrounds[index];
-
-                                neighborvalue = this.grid[neighbor.x, neighbor.y];
+                                neighbor = startpoint + direction;
+                                neighborvalue = this.grid[neighbor];
 
                                 while (neighborvalue != Char.ToString(this.player[0]) && neighborvalue != "O")
                                 {
-                                    neighbor += surrounds[index];
-                                    neighborvalue = this.grid[neighbor.x, neighbor.y];
-
                                     steps.Add(neighbor);
+                                    neighbor += direction;
+
+                                    neighborvalue = this.grid[neighbor];
                                 }
 
-                                if (neighborvalue == "O" && steps.Count > 0)
-                                {
-                                    Move newmove = new Move(neighbor, steps);
-                                    moves.Add(newmove);
-                                }
+                                if (neighborvalue == "O" && steps.Count > 0)                             
+                                    moves.Add(new Move(neighbor, steps));
+                                
                             }
                             catch { /* INDEX OUT OF RANGE */ }
                         }
@@ -238,7 +239,7 @@ namespace Reversi
     {
         public string[,] Grid { set; get; }
 
-        public string this[Point point]
+        public string this[Pt point]
         {
             get => Grid [point.x, point.y];
             set => Grid [point.x, point.y] = value;
@@ -255,38 +256,38 @@ namespace Reversi
         }
     }
 
-    public class Move
+    public struct Move
     {
-        public List<Point> steps;
-        public Point       point;
+        public List<Pt> steps;
+        public Pt       point;
 
-        public Move(Point point, List<Point> steps)
+        public Move(Pt point, List<Pt> steps)
         {
             this.steps = steps;
             this.point = point;
         }
     }
 
-    public class Point
+    public class Pt
     {
         public int x;
         public int y;
 
-        public Point(int x, int y)
+        public Pt(int x, int y)
         {
             this.x = x;
             this.y = y;
         }
 
-        public static Point operator +(Point a, Point b)
-        => new Point(a.x + b.x, a.y + b.y);
+        public static Pt operator +(Pt a, Pt b)
+        => new Pt(a.x + b.x, a.y + b.y);
 
 
-        public static bool operator ==(Point a, Point b)
+        public static bool operator ==(Pt a, Pt b)
         {
             return (a.x == b.x && a.y == b.y);
         }
-        public static bool operator !=(Point a, Point b)
+        public static bool operator !=(Pt a, Pt b)
         {
             return !(a.x == b.x && a.y == b.y);
         }
