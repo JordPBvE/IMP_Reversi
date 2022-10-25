@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -16,41 +17,72 @@ namespace Reversi
     public partial class Reversi : Form
     {
         //Declaratie van variabelen
-        int n;
+        int   n;
+        bool  hint;
         float rbox;
+
         Board board;
+
+        Player P1;
+        Player P2;
 
         public Reversi()
         {
             InitializeComponent();
 
-            defaults();
+            player2.Items.Add(new Player("ROOD", "P2", Color.Red));
+            player2.Items.Add(new Player("ORANJE", "P2", Color.Orange));
+            player2.Items.Add(new Player("GEEL", "P2", Color.Yellow));
+
+            player1.Items.Add(new Player("BLAUW", "P1", Color.Blue));
+            player1.Items.Add(new Player("PAARS", "P1", Color.Purple));
+            player1.Items.Add(new Player("TEAL", "P1", Color.Teal));
+
+            player1.SelectedIndex = player2.SelectedIndex = 0;
+
+            P1 = (Player)player1.SelectedItem;
+            P2 = (Player)player2.SelectedItem;
+
+            defaults(null, null);
 
             boardpanel.Paint += drawboard;
             scorepanel.Paint += drawscore;
 
             boardpanel.MouseClick += click;
+
+            hintbutton.Click       += help;
+            resetbutton.Click      += defaults;
+            nTrackbar.ValueChanged += defaults;
+
+            player1.SelectedIndexChanged += playerchanged;
+            player2.SelectedIndexChanged += playerchanged;
         }
 
-        public void defaults()
+        public void defaults(object o, EventArgs ea)
         {
-            n = 6;
-            rbox = 600 / n;
 
-            board = new Board(n);
+            n = 2* nTrackbar.Value;
+            hint = false;
+            rbox = boardpanel.Size.Height / n;
+
+            board = new Board(n, P1, P2);
             board.updatescore(bluescorelabel, redscorelabel);
 
-            gamestatus.Text = "Blauw begint";
+            boardpanel.Invalidate();
+
+            gamestatus.Text = P1.name + " BEGINT";
         }
 
 
         public void drawboard(object o, PaintEventArgs pea)
         {
+            if (board.moves.Count == 0){drawwinner(o, pea); return;}
+
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
                 {
-                    Color squarecolor    = board.getsquarecolor(new Pt(i, j), this.BackColor);
-                    Brush piecebrush     = new SolidBrush(squarecolor);
+                    Color squarecolor     = board.getsquarecolor(new Pt(i, j), this.BackColor);
+                    Brush piecebrush      = new SolidBrush(squarecolor);
                     Brush lightpiecebrush = new SolidBrush(ControlPaint.LightLight(squarecolor));
 
                     if (squarecolor == this.BackColor)
@@ -60,19 +92,52 @@ namespace Reversi
                     pea.Graphics.DrawRectangle(new Pen(Color.Gray), rbox * i,                  rbox * j,                    rbox,                    rbox);
                     pea.Graphics.FillEllipse  (piecebrush,          rbox * i + (int)(rbox/40), rbox * j + (int)(rbox / 40), rbox - (int)(rbox / 20), rbox - (int)(rbox / 20));
                 }
-
-            for (int index = 0; index < board.moves.Count; index++)
-            {
-                Pt square = board.moves[index].point;
-                pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square.x, rbox * square.y, rbox, rbox);
-            }
+            if (hint)
+                for (int index = 0; index < board.moves.Count; index++)
+                {
+                    Pt square = board.moves[index].point;
+                    pea.Graphics.DrawEllipse(new Pen(Color.Black), rbox * square.x, rbox * square.y, rbox, rbox);
+                }
+            hint = false;
         }
 
 
         public void drawscore(object o, PaintEventArgs pea)
         {
-            pea.Graphics.FillEllipse(Brushes.Red,  1, 1,  40, 40);
-            pea.Graphics.FillEllipse(Brushes.Blue, 1, 41, 40, 40);
+            pea.Graphics.FillEllipse(new SolidBrush(P1.color),  1, 1,  40, 40);
+            pea.Graphics.FillEllipse(new SolidBrush(P2.color), 1, 41, 40, 40);
+        }
+
+        public void drawwinner(object o, PaintEventArgs pea)
+        {
+            gamestatus.Text = "We have a winner!";
+
+            int redscore  = int.Parse(redscorelabel.Text);
+            int bluescore = int.Parse(bluescorelabel.Text);
+
+            Brush br;
+            string message;
+            if (redscore > bluescore)
+            {
+                br = new SolidBrush(ControlPaint.Light(Color.Red));
+                message = P1.name + " WINT";
+            }
+            else if (redscore < bluescore)
+            {
+                br = new SolidBrush(ControlPaint.Light(Color.Blue));
+                message = "BLAUW WINT";
+            }
+            else
+            {
+                br = new SolidBrush(Color.LightGray);
+                message = "REMISE";
+            }
+            pea.Graphics.FillRectangle(br, 0, 0, 600, 600);
+            pea.Graphics.DrawString(message, 
+                                    new Font("Arial", 20), 
+                                    new SolidBrush(Color.Black), 
+                                    new Rectangle(160, 230, 200, 50), 
+                                    new StringFormat() { Alignment = StringAlignment.Center });
         }
 
 
@@ -98,8 +163,34 @@ namespace Reversi
             }
         }
 
+        public void help(object o, EventArgs ea)
+        {
+            hint = true;
+            boardpanel.Invalidate();
+        }
+
+        public void playerchanged(object o, EventArgs ea)
+        {
+            this.P1 = (Player)player1.SelectedItem;
+            this.P2 = (Player)player2.SelectedItem;
+
+            if (board.player.sign == "P1")
+            {
+                board.player = P1;
+                board.waiting = P2;
+            } else
+            {
+                board.player = P2;
+                board.waiting = P1;
+            }
+
+            boardpanel.Invalidate();
+            scorepanel.Invalidate();
+        }
+
         private void textBox1_TextChanged(object sender, EventArgs e) { }
         private void textBox2_TextChanged(object sender, EventArgs e) { }
+        private void sizelabel_Click(object sender, EventArgs e) { }
     }
 
 
@@ -108,29 +199,32 @@ namespace Reversi
         public int dimension;
         public GridWrapper grid;
         public List<Move> moves;
-        public string player;
+        public Player player;
+        public Player waiting;
 
-        public Board(int n)
+        public Board(int n, Player p1, Player p2)
         {
             this.dimension = n;
             
-            this.player = "BLUE";
+            this.player  = p1;
+            this.waiting = p2;
+
             this.grid = new GridWrapper(n, n);
 
             for (int i = 0; i < n; i++) 
                 for (int j = 0; j < n; j++) 
                     this.grid[i, j] = "O";
 
-            this.grid[n / 2 - 1, n / 2 - 1] = this.grid[n / 2, n / 2]     = "B";
-            this.grid[n / 2 - 1, n / 2]     = this.grid[n / 2, n / 2 - 1] = "R";
+            this.grid[n / 2 - 1, n / 2 - 1] = this.grid[n / 2, n / 2]     = "P1";
+            this.grid[n / 2 - 1, n / 2]     = this.grid[n / 2, n / 2 - 1] = "P2";
 
             this.updatemoves();
         }
 
         public Color getsquarecolor(Pt point, Color background)
         {
-            if      (this.grid[point] == "R") return Color.Red;
-            else if (this.grid[point] == "B") return Color.Blue;
+            if      (this.grid[point] == this.player.sign)  return this.player.color;
+            else if (this.grid[point] == this.waiting.sign) return this.waiting.color;
 
             return background;
         }
@@ -148,13 +242,13 @@ namespace Reversi
 
         public void placepiece(Pt point)
         {
-            this.grid[point] = Char.ToString(this.player[0]);
+            this.grid[point] = this.player.sign;
 
             for (int i = 0; i < moves.Count; i++)
                 if (point == moves[i].point)
                     for (int k = 0; k < this.moves[i].steps.Count; k++)
                     {
-                        this.grid[moves[i].steps[k]] = Char.ToString(this.player[0]);
+                        this.grid[moves[i].steps[k]] = this.player.sign;
                     }
         }
 
@@ -169,7 +263,7 @@ namespace Reversi
 
             for (int i = 0; i < this.dimension; i++)
                 for (int j = 0; j < this.dimension; j++)
-                    if (this.grid[i, j] == Char.ToString(this.player[0]))
+                    if (this.grid[i, j] == this.player.sign)
                     {
                         startpoint = new Pt(i, j);
                         List<Pt> directions = new List<Pt>
@@ -188,7 +282,7 @@ namespace Reversi
                                 neighbor = startpoint + direction;
                                 neighborvalue = this.grid[neighbor];
 
-                                while (neighborvalue != Char.ToString(this.player[0]) && neighborvalue != "O")
+                                while (neighborvalue != this.player.sign && neighborvalue != "O")
                                 {
                                     steps.Add(neighbor);
                                     neighbor += direction;
@@ -204,35 +298,48 @@ namespace Reversi
                         }
                     }
         }
-        public void updatescore(Label bluescorelabel, Label redscorelabel)
+        public void updatescore(Label p1scorelabel, Label p2scorelabel)
         {
-            int redscore = 0;
-            int bluescore = 0;
+            int p1score = 0;
+            int p2score = 0;
 
             for (int i = 0; i < this.dimension; i++)
                 for (int j = 0; j < this.dimension; j++)
                 {
-                    if (this.grid[i, j] == "B") bluescore++;
-                    else if (this.grid[i, j] == "R") redscore++;
+                    if (this.grid[i, j] == "P1") p1score++;
+                    else if (this.grid[i, j] == "P2") p2score++;
                 }
 
-            bluescorelabel.Text = $"{bluescore}";
-            redscorelabel.Text = $"{redscore}";
+            p1scorelabel.Text = $"{p1score}";
+            p2scorelabel.Text = $"{p2score}";
         }
 
         public void switchplayer(Label gamestatus)
         {
-            if (this.player == "BLUE")
-            {
-                this.player = "RED";
-                gamestatus.Text = "Rood is aan zet";
-            }
-            else
-            {
-                this.player = "BLUE";
-                gamestatus.Text = "Blauw is aan zet";
-            }
+            Player buffer = this.waiting;
+
+            this.waiting = this.player;
+            this.player  = buffer;
+
+            gamestatus.Text = this.player.name + " IS AAN ZET";
         }
+    }
+
+    public class Player
+    {
+        public string name;
+        public string sign;
+        public Color color;
+
+        public Player(string name, string sign, Color color)
+        {
+            this.name = name;
+            this.sign = sign;
+            this.color = color;
+        }
+
+        public override string ToString()
+            => name;
     }
 
     public class GridWrapper : Tuple<int, int>
