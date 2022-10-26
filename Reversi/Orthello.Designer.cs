@@ -1,4 +1,6 @@
-﻿namespace Reversi
+﻿using System.Drawing;
+
+namespace Reversi
 {
     partial class Reversi
     {
@@ -30,12 +32,12 @@
         {
             this.boardpanel = new System.Windows.Forms.Panel();
             this.scorepanel = new System.Windows.Forms.Panel();
-            this.redscorelabel = new System.Windows.Forms.Label();
+            this.p2scorelabel = new System.Windows.Forms.Label();
             this.gamestatus = new System.Windows.Forms.Label();
             this.hintbutton = new System.Windows.Forms.Button();
             this.resetbutton = new System.Windows.Forms.Button();
             this.nTrackbar = new System.Windows.Forms.TrackBar();
-            this.bluescorelabel = new System.Windows.Forms.Label();
+            this.p1scorelabel = new System.Windows.Forms.Label();
             this.sizelabel = new System.Windows.Forms.Label();
             this.player1 = new System.Windows.Forms.ComboBox();
             this.player2 = new System.Windows.Forms.ComboBox();
@@ -60,13 +62,12 @@
             // 
             // redscorelabel
             // 
-            this.redscorelabel.BackColor = System.Drawing.SystemColors.Control;
-            this.redscorelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.redscorelabel.Location = new System.Drawing.Point(51, 24);
-            this.redscorelabel.Name = "redscorelabel";
-            this.redscorelabel.Size = new System.Drawing.Size(78, 31);
-            this.redscorelabel.TabIndex = 2;
-            this.redscorelabel.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
+            this.p2scorelabel.BackColor = System.Drawing.SystemColors.Control;
+            this.p2scorelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.p2scorelabel.Location = new System.Drawing.Point(51, 24);
+            this.p2scorelabel.Name = "redscorelabel";
+            this.p2scorelabel.Size = new System.Drawing.Size(78, 31);
+            this.p2scorelabel.TabIndex = 2;
             // 
             // gamestatus
             // 
@@ -107,12 +108,12 @@
             // 
             // bluescorelabel
             // 
-            this.bluescorelabel.BackColor = System.Drawing.SystemColors.Control;
-            this.bluescorelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.bluescorelabel.Location = new System.Drawing.Point(51, 79);
-            this.bluescorelabel.Name = "bluescorelabel";
-            this.bluescorelabel.Size = new System.Drawing.Size(78, 31);
-            this.bluescorelabel.TabIndex = 8;
+            this.p1scorelabel.BackColor = System.Drawing.SystemColors.Control;
+            this.p1scorelabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.p1scorelabel.Location = new System.Drawing.Point(51, 79);
+            this.p1scorelabel.Name = "bluescorelabel";
+            this.p1scorelabel.Size = new System.Drawing.Size(78, 31);
+            this.p1scorelabel.TabIndex = 8;
             // 
             // sizelabel
             // 
@@ -123,7 +124,6 @@
             this.sizelabel.TabIndex = 9;
             this.sizelabel.Text = "SIZE:";
             this.sizelabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.sizelabel.Click += new System.EventHandler(this.sizelabel_Click);
             // 
             // player1
             // 
@@ -132,6 +132,9 @@
             this.player1.Name = "player1";
             this.player1.Size = new System.Drawing.Size(192, 24);
             this.player1.TabIndex = 10;
+            this.player1.Items.Add(new Player("BLAUW", "P1", Color.Blue));
+            this.player1.Items.Add(new Player("PAARS", "P1", Color.Purple));
+            this.player1.Items.Add(new Player("TEAL", "P1", Color.Teal));
             // 
             // player2
             // 
@@ -140,6 +143,9 @@
             this.player2.Name = "player2";
             this.player2.Size = new System.Drawing.Size(192, 24);
             this.player2.TabIndex = 11;
+            this.player2.Items.Add(new Player("ROOD", "P2", Color.Red));
+            this.player2.Items.Add(new Player("ORANJE", "P2", Color.Orange));
+            this.player2.Items.Add(new Player("GEEL", "P2", Color.Yellow));
             // 
             // player1label
             // 
@@ -169,12 +175,12 @@
             this.Controls.Add(this.player2);
             this.Controls.Add(this.player1);
             this.Controls.Add(this.sizelabel);
-            this.Controls.Add(this.bluescorelabel);
+            this.Controls.Add(this.p1scorelabel);
             this.Controls.Add(this.nTrackbar);
             this.Controls.Add(this.resetbutton);
             this.Controls.Add(this.hintbutton);
             this.Controls.Add(this.gamestatus);
-            this.Controls.Add(this.redscorelabel);
+            this.Controls.Add(this.p2scorelabel);
             this.Controls.Add(this.scorepanel);
             this.Controls.Add(this.boardpanel);
             this.Name = "Reversi";
@@ -189,8 +195,8 @@
 
         private System.Windows.Forms.Panel boardpanel;
         private System.Windows.Forms.Panel scorepanel;
-        private System.Windows.Forms.Label redscorelabel;
-        private System.Windows.Forms.Label bluescorelabel;
+        private System.Windows.Forms.Label p2scorelabel;
+        private System.Windows.Forms.Label p1scorelabel;
         private System.Windows.Forms.Label gamestatus;
         private System.Windows.Forms.Button hintbutton;
         private System.Windows.Forms.Button resetbutton;
