@@ -70,7 +70,6 @@ namespace Reversi
         // draw the board by looping through the grid, and for each cell, drawing the cell borders and the possible piece in the cell
         public void drawboard(object o, PaintEventArgs pea)
         {
-
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
                 {
